@@ -1,0 +1,32 @@
+id: "001"
+title: Checkout errors two minutes after a deploy
+alert:
+  name: HighErrorRate
+  service: checkout-api
+  fired_at: "2026-11-18T03:14:00Z"
+  summary: 5xx rate on checkout-api above 5% for 3 minutes
+environment:
+  logs:
+    - "03:09:58 checkout-api INFO starting v2.41.0"
+    - "03:11:02 checkout-api ERROR TypeError: cannot read 'currency' of undefined at applyDiscount (discounts.ts:88)"
+    - "03:11:02 checkout-api ERROR POST /checkout 500 12ms"
+    - "03:12:40 checkout-api ERROR TypeError: cannot read 'currency' of undefined at applyDiscount (discounts.ts:88)"
+    - "03:13:15 payments-gateway INFO healthcheck ok"
+  metrics:
+    checkout-api.5xx_rate: "Flat near 0.1% until 03:11, then a step up to 14% and holding"
+    checkout-api.requests_per_min: "Steady at about 220, normal for this hour"
+    payments-gateway.5xx_rate: "Flat near 0%"
+  deploys:
+    - service: checkout-api
+      version: v2.41.0
+      at: "2026-11-18T03:10:00Z"
+      change: Multi-currency discount codes
+  runbook: "HighErrorRate on checkout-api: customers cannot pay. If it follows a deploy within 15 minutes, roll back first and investigate after."
+expected:
+  action: page
+  root_cause: bad_deploy
+  key_evidence:
+    - "cannot read 'currency' of undefined at applyDiscount"
+    - "then a step up to 14% and holding"
+    - "v2.41.0"
+  why: Customers can't pay, the errors began a minute after v2.41.0 and are in the code it changed. The runbook says roll back.

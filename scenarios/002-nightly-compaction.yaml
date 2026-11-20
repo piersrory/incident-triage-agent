@@ -1,0 +1,24 @@
+id: "002"
+title: Disk alert during the nightly compaction
+trap: The alert looks serious on its own. The runbook and the metric's nightly pattern show it's expected.
+alert:
+  name: DiskUsageHigh
+  service: events-db
+  fired_at: "2026-11-18T02:20:00Z"
+  summary: Disk usage on events-db-1 above 85%
+environment:
+  logs:
+    - "02:00:01 events-db INFO compaction started (scheduled)"
+    - "02:19:44 events-db INFO compaction 61% complete, temp files 38GB"
+    - "02:20:00 events-db WARN disk usage 86%"
+  metrics:
+    events-db-1.disk_used_pct: "Climbs from 62% to about 88% between 02:00 and 02:40 every night for the last 14 nights, then drops back to 62%"
+    events-db.write_latency_ms: "Normal, about 4ms"
+  runbook: "DiskUsageHigh on events-db: compaction runs at 02:00 UTC and needs up to 30% temporary space. Usage up to 90% between 02:00 and 03:00 is expected. Page only above 95%, or if usage is high outside that window."
+expected:
+  action: dismiss
+  root_cause: expected
+  key_evidence:
+    - "compaction started (scheduled)"
+    - "Usage up to 90% between 02:00 and 03:00 is expected"
+  why: 86% at 02:20 is inside the window and under the limit the runbook gives, and the same curve has repeated for 14 nights.

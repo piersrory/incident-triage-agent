@@ -1,0 +1,32 @@
+id: "006"
+title: Switching vehicles briefly shows the previous vehicle's information
+trap: Showing the wrong vehicle's data sounds like a page. It lasts under two seconds, corrects itself, and isn't on a screen the runbook pages for.
+alert:
+  name: VehicleMismatchEvents
+  service: ios-app
+  fired_at: "2026-11-19T15:30:00Z"
+  summary: More than 50 vehicle_mismatch events an hour (the screen showed data for a vehicle other than the one selected)
+environment:
+  logs:
+    - "15:02:11 ios-app WARN vehicle_mismatch selected=veh_124 displayed=veh_123 screen=VehicleHealth shown_for_ms=1800"
+    - "15:09:40 ios-app WARN vehicle_mismatch selected=veh_530 displayed=veh_512 screen=VehicleHealth shown_for_ms=1400"
+    - "15:21:05 ios-app WARN vehicle_mismatch selected=veh_077 displayed=veh_124 screen=VehicleHealth shown_for_ms=2100"
+  metrics:
+    ios-app.vehicle_mismatch_per_hour: "Near zero until v5.13.1 reached half of users at 13:00, then about 120 an hour"
+    ios-app.vehicle_mismatch_shown_for_ms: "Median 1600ms, longest 4000ms, then the correct vehicle's data replaces it"
+    ios-app.vehicle_mismatch_by_screen: "VehicleHealth 100%. Live map 0%. Alerts 0%"
+    vehicle-api.p99_latency_ms: "About 400ms, unchanged"
+  deploys:
+    - service: ios-app
+      version: v5.13.1
+      at: "2026-11-19T09:00:00Z"
+      change: Vehicle switcher shows the last loaded data while the new vehicle loads
+  runbook: "VehicleMismatchEvents: page if the wrong data stays for more than 30 seconds, or appears on the live map or alerts, because a manager could act on the wrong vehicle. Otherwise raise it in the team channel."
+expected:
+  action: notify
+  root_cause: bad_deploy
+  key_evidence:
+    - "selected=veh_124 displayed=veh_123"
+    - "Near zero until v5.13.1 reached half of users at 13:00"
+    - "Otherwise raise it in the team channel"
+  why: Customers briefly see the previous vehicle's health data, then the right data loads. It began with v5.13.1, lasts seconds, and is only on a screen the runbook doesn't page for.

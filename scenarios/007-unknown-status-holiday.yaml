@@ -1,0 +1,28 @@
+id: "007"
+title: A daytime jump in vehicles showing as "unknown"
+trap: The runbook's expected case is overnight, and this fires at lunchtime. It's a public holiday for nearly all the affected accounts, which you only see by checking the date.
+alert:
+  name: UnknownStatusRateHigh
+  service: vehicle-status-api
+  fired_at: "2026-12-08T13:00:00Z"
+  summary: More than 10% of vehicles are reporting status "unknown"
+environment:
+  logs:
+    - "12:41:09 vehicle-status-api INFO veh_311 status=unknown reason=no_heartbeat last_seen=2026-12-07T18:42:00Z"
+    - "12:41:09 vehicle-status-api INFO veh_312 status=unknown reason=no_heartbeat last_seen=2026-12-07T19:05:00Z"
+    - "12:50:33 vehicle-status-api INFO heartbeat ok veh_640"
+  metrics:
+    vehicle-status-api.unknown_share: "3% on a normal working day. 14% today since about 01:00, the same level as last Sunday"
+    vehicle-status-api.unknown_by_country: "Spain 96% of unknown vehicles. Other countries at their normal 3%"
+    vehicle-status-api.5xx_rate: "Flat near 0%"
+    accounts.calendar: "2026-12-08 is a public holiday in Spain"
+  deploys: []
+  runbook: "UnknownStatusRateHigh: vehicles stop reporting about 6 hours after the ignition is switched off, to save the battery, and show as unknown until they are next driven. A rise overnight, at weekends and on public holidays is expected. Page if the API error rate rises, or if vehicles that are being driven show as unknown."
+expected:
+  action: dismiss
+  root_cause: expected
+  key_evidence:
+    - "reason=no_heartbeat last_seen=2026-12-07T18:42:00Z"
+    - "2026-12-08 is a public holiday in Spain"
+    - "at weekends and on public holidays is expected"
+  why: The unknown vehicles were last driven the evening before and are nearly all in Spain, where it's a public holiday. The API is healthy and vehicles in use are reporting normally.

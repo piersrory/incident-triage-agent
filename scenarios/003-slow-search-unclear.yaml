@@ -1,0 +1,27 @@
+id: "003"
+title: Search is slow and the cause isn't in the evidence
+trap: There's no deploy and no errors, so it's tempting to dismiss. Nothing shows it's expected either, and nothing explains it.
+alert:
+  name: LatencyP99High
+  service: search-api
+  fired_at: "2026-11-18T04:05:00Z"
+  summary: p99 latency on search-api above 2s for 10 minutes
+environment:
+  logs:
+    - "03:52:10 search-api WARN slow query 2140ms index=products"
+    - "03:58:31 search-api WARN slow query 2630ms index=products"
+    - "04:03:02 search-api WARN slow query 2412ms index=products"
+  metrics:
+    search-api.p99_latency_ms: "About 400ms until 03:50, then rising steadily to 2500ms"
+    search-api.5xx_rate: "Flat near 0%"
+    search-api.requests_per_min: "About 40, normal for this hour"
+    search-cluster.cpu_pct: "About 35%, unchanged"
+  deploys: []
+  runbook: "LatencyP99High on search-api: search still works but is slow. Page if the error rate rises above 1% or p99 passes 5s. Otherwise raise it in the team channel."
+expected:
+  action: notify
+  root_cause: unknown
+  key_evidence:
+    - "then rising steadily to 2500ms"
+    - "Otherwise raise it in the team channel"
+  why: Customers are slowed, not blocked, and it's under both paging limits in the runbook. Load, CPU and deploys don't explain it, so the honest cause is unknown.

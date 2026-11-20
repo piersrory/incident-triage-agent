@@ -1,0 +1,32 @@
+id: "005"
+title: Crash loop on launch after a new release
+trap: It only crashes for people upgrading with a saved sign-in. A fresh install works, so trying it on a clean test phone shows nothing wrong.
+alert:
+  name: CrashFreeRateLow
+  service: ios-app
+  fired_at: "2026-11-18T11:20:00Z"
+  summary: Crash-free rate on ios-app below 98% for 30 minutes
+environment:
+  logs:
+    - "10:42:15 ios-app CRASH v5.13.0 EXC_BAD_ACCESS in SessionRestore.migrateSavedSession() 2.8s after launch"
+    - "10:42:21 ios-app CRASH v5.13.0 EXC_BAD_ACCESS in SessionRestore.migrateSavedSession() 2.9s after launch (same device, 2nd crash)"
+    - "10:42:27 ios-app CRASH v5.13.0 EXC_BAD_ACCESS in SessionRestore.migrateSavedSession() 3.1s after launch (same device, 3rd crash)"
+    - "10:55:03 login-api INFO sign-in ok device=new-install app=v5.13.0"
+  metrics:
+    ios-app.crash_free_rate_by_version: "v5.12.0 steady at 99.7%. v5.13.0 at 71% since its rollout began"
+    ios-app.crashes_by_install_type: "Upgrades with a saved session: 29% crash on launch. New installs: 0%"
+    login-api.5xx_rate: "Flat near 0%"
+  deploys:
+    - service: ios-app
+      version: v5.13.0
+      at: "2026-11-18T10:00:00Z"
+      change: New sign-in storage; phased rollout at 25% of users
+  runbook: "CrashFreeRateLow: if a version in phased rollout is below 98%, pause the rollout and page the release owner. Users stuck in a crash loop cannot use the app at all."
+expected:
+  action: page
+  root_cause: bad_deploy
+  key_evidence:
+    - "EXC_BAD_ACCESS in SessionRestore.migrateSavedSession()"
+    - "v5.13.0 at 71% since its rollout began"
+    - "pause the rollout and page the release owner"
+  why: A quarter of users are getting v5.13.0 and nearly a third of upgraders can't open the app. Every hour the rollout continues, more people are locked out.

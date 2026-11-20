@@ -1,0 +1,33 @@
+id: "004"
+title: History screen errors, but only for users in the Americas
+trap: No release caused it, so "what changed?" finds nothing in the deploys. What changed is who is using the app.
+alert:
+  name: ScreenErrorRateHigh
+  service: ios-app
+  fired_at: "2026-11-18T14:10:00Z"
+  summary: Error rate on the trip history screen above 5% for 15 minutes
+environment:
+  logs:
+    - "13:41:07 trips-api WARN GET /trips 400 'to' must not be later than the end of the current UTC day (to=2026-11-19T04:59:59Z)"
+    - "13:52:30 trips-api WARN GET /trips 400 'to' must not be later than the end of the current UTC day (to=2026-11-19T05:59:59Z)"
+    - "14:03:12 ios-app ERROR TripHistoryView failed to load: 400"
+    - "14:03:12 android-app ERROR TripHistoryScreen failed to load: 400"
+  metrics:
+    ios-app.trip_history.error_rate: "Near 0% until 13:30, then rising to 9% as the morning starts in the Americas"
+    ios-app.trip_history.error_rate_by_region: "Europe 0%. United States and Canada 100% of requests failing"
+    ios-app.crash_free_rate: "99.7%, unchanged"
+    accounts.active_by_region: "First United States customer went live on 2026-11-17; before that every active account was in Europe"
+  deploys:
+    - service: ios-app
+      version: v5.12.0
+      at: "2026-11-10T09:00:00Z"
+      change: Dark mode fixes
+  runbook: "ScreenErrorRateHigh: page if the screen is sign-in, live map or alerts. For other screens, raise it in the team channel with the affected users and the error."
+expected:
+  action: notify
+  root_cause: latent_bug
+  key_evidence:
+    - "'to' must not be later than the end of the current UTC day"
+    - "Europe 0%. United States and Canada 100% of requests failing"
+    - "First United States customer went live on 2026-11-17"
+  why: The apps ask for trips up to the end of the user's local day, which is past the end of the UTC day for anyone behind UTC. The bug was always there; the first US customer exposed it. History isn't a paging screen in the runbook, so it goes to the channel.
