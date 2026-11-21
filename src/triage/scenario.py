@@ -55,6 +55,12 @@ class Environment(Strict):
     deploys: list[Deploy] = []
     runbook: str = ""
 
+    def text(self) -> str:
+        """Everything in the environment as one string, for checking that a quote is really there."""
+        return "\n".join(
+            [*self.logs, *self.metrics.values(), self.runbook, *(f"{d.version} {d.change}" for d in self.deploys)]
+        )
+
 
 class Expected(Strict):
     """The answer key."""
@@ -76,10 +82,7 @@ class Scenario(Strict):
 
     @model_validator(mode="after")
     def evidence_is_really_there(self) -> "Scenario":
-        env = self.environment
-        haystack = "\n".join(
-            [*env.logs, *env.metrics.values(), env.runbook, *(f"{d.version} {d.change}" for d in env.deploys)]
-        )
+        haystack = self.environment.text()
         missing = [e for e in self.expected.key_evidence if e not in haystack]
         if missing:
             raise ValueError(f"{self.id}: key evidence not found in the environment: {missing}")
