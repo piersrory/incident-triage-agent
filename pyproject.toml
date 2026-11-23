@@ -3,7 +3,13 @@ name = "incident-triage-agent"
 version = "0.1.0"
 description = "An agent that investigates an alert and decides whether to wake a person, measured on scripted incidents"
 requires-python = ">=3.13"
-dependencies = ["pydantic>=2.9", "pyyaml>=6.0"]
+dependencies = [
+    "langchain-anthropic>=1.7.12",
+    "langgraph>=1.2.24",
+    "pydantic>=2.9",
+    "python-dotenv>=1.2.4",
+    "pyyaml>=6.0",
+]
 
 [dependency-groups]
 dev = ["pytest>=8.0"]
