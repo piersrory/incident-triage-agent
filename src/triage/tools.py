@@ -14,8 +14,16 @@ def search_logs(env: Environment, query: str = "") -> str:
     """Log lines containing the query (any case). An empty query returns the most recent lines."""
     lines = [line for line in env.logs if query.lower() in line.lower()]
     if not lines:
-        return f"No log lines contain '{query}'."
+        return f"No log lines contain '{query}'. {what_exists(env)}"
     return "\n".join(lines[-MAX_LOG_LINES:])
+
+
+def what_exists(env: Environment) -> str:
+    """Said after a search that matched nothing, so "my words weren't there" isn't read as "nothing is there"."""
+    if not env.logs:
+        return "There are no log lines at all."
+    services = sorted({line.split()[1] for line in env.logs})  # a line is "time service LEVEL message"
+    return f"There are {len(env.logs)} log lines, from: {', '.join(services)}."
 
 
 def list_metrics(env: Environment) -> str:
@@ -32,11 +40,9 @@ def get_metric(env: Environment, name: str) -> str:
 
 def list_deploys(env: Environment) -> str:
     """Recent releases and flag changes, oldest first."""
-    if not env.deploys:
-        return "No deploys in the last 7 days."
-    return "\n".join(f"{d.at} {d.service} {d.version}: {d.change}" for d in env.deploys)
+    return "\n".join(env.deploy_lines())
 
 
 def read_runbook(env: Environment) -> str:
     """The team's written instructions for this alert."""
-    return env.runbook or "There is no runbook for this alert."
+    return env.runbook_text()

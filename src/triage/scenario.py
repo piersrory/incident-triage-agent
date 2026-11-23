@@ -46,6 +46,14 @@ class Deploy(Strict):
     at: str  # ISO 8601, UTC
     change: str
 
+    def line(self) -> str:
+        """How a deploy reads to the agent. The quote check uses the same text, so it can be quoted."""
+        return f"{self.at} {self.service} {self.version}: {self.change}"
+
+
+NO_DEPLOYS = "No deploys in the last 7 days."
+NO_RUNBOOK = "There is no runbook for this alert."
+
 
 class Environment(Strict):
     """Everything the agent's tools can return for this scenario, and nothing else."""
@@ -55,11 +63,16 @@ class Environment(Strict):
     deploys: list[Deploy] = []
     runbook: str = ""
 
+    def deploy_lines(self) -> list[str]:
+        """What the deploy list shows. "Nothing was released" is evidence too, so it has its own line."""
+        return [d.line() for d in self.deploys] or [NO_DEPLOYS]
+
+    def runbook_text(self) -> str:
+        return self.runbook or NO_RUNBOOK
+
     def text(self) -> str:
         """Everything in the environment as one string, for checking that a quote is really there."""
-        return "\n".join(
-            [*self.logs, *self.metrics.values(), self.runbook, *(f"{d.version} {d.change}" for d in self.deploys)]
-        )
+        return "\n".join([*self.logs, *self.metrics.values(), self.runbook_text(), *self.deploy_lines()])
 
 
 class Expected(Strict):
